@@ -6,7 +6,7 @@
 * 1) Make a copy:
 *      New Interface: Go to the project overview icon on the left (looks like this: ⓘ), then click the "copy" icon on the top right (looks like two files on top of each other)
 *      Old Interface: Click in the menu "File" > "Make a copy..." and make a copy to your Google Drive
-* 2) Settings: Change lines 24-50 to be the settings that you want to use
+* 2) Settings: Change lines 36-42 to be the settings that you want to use
 * 3) Install:
 *      New Interface: Make sure your toolbar says "install" to the right of "Debug", then click "Run"
 *      Old Interface: Click "Run" > "Run function" > "install"
@@ -17,22 +17,32 @@
 *
 * **To stop the Script from running click in the menu "Run" > "Run function" > "uninstall" (New Interface: change the dropdown to the right of "Debug" from "install" to "uninstall")
 *
+*/
+var jsonResponse = getCalendarData();
+jsonResponse = JSON.parse(jsonResponse);
+var ical = dataToIcal(jsonResponse);
+var icalLink = saveIcalFile(ical, "CELCAT-EDT");
+icalLink = icalLink.replace(/https:\/\/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)\/view\?usp=drivesdk/, "https://drive.google.com/uc?export=download&id=$1");
+// Logger.log(icalLink)
+
+
+/*
 *=========================================
 *               SETTINGS
 *=========================================
 */
 
+
 var sourceCalendars = [                // The ics/ical urls that you want to get events from along with their target calendars (list a new row for each mapping of ICS url to Google Calendar)
                                        // For instance: ["https://p24-calendars.icloud.com/holidays/us_en.ics", "US Holidays"]
                                        // Or with colors following mapping https://developers.google.com/apps-script/reference/calendar/event-color,
                                        // for instance: ["https://p24-calendars.icloud.com/holidays/us_en.ics", "US Holidays", "11"]
-  ["icsUrl1", "targetCalendar1"],
-  ["icsUrl2", "targetCalendar2"],
-  ["icsUrl3", "targetCalendar1"]
-
+  [icalLink, "School Timetable 1"],
+  //[icalLink, "School Timeetable 2"]
 ];
 
 var howFrequent = 15;                     // What interval (minutes) to run this script on to check for new events.  Any integer can be used, but will be rounded up to 5, 10, 15, 30 or to the nearest hour after that.. 60, 120, etc. 1440 (24 hours) is the maximum value.  Anything above that will be replaced with 1440.
+var onlyFutureEvents = false;             // If you turn this to "true", past events will not be synced (this will also removed past events from the target calendar if removeEventsFromCalendar is true)
 var addEventsToCalendar = true;           // If you turn this to "false", you can check the log (View > Logs) to make sure your events are being read correctly before turning this on
 var modifyExistingEvents = true;          // If you turn this to "false", any event in the feed that was modified after being added to the calendar will not update
 var removeEventsFromCalendar = true;      // If you turn this to "true", any event created by the script that is not found in the feed will be removed.
@@ -90,6 +100,9 @@ var dateFormat = "YYYY-MM-DD"             // date format in the email summary (e
 *
 * Jonas Geissler
 * Github: https://github.com/jonas0b1011001
+*
+* Huy Hoang Bui
+* Github: https://github.com/bhhoang
 */
 
 
@@ -129,6 +142,8 @@ function uninstall(){
   deleteAllTriggers();
 }
 
+var startUpdateTime;
+
 // Per-calendar global variables (must be reset before processing each new calendar!)
 var calendarEvents = [];
 var calendarEventsIds = [];
@@ -143,9 +158,6 @@ var addedEvents = [];
 var modifiedEvents = [];
 var removedEvents = [];
 
-// Syncing logic can set this to true to cause the Google Apps Script "Executions" dashboard to report failure
-var reportOverallFailure = false;
-
 function startSync(){
   if (PropertiesService.getUserProperties().getProperty('LastRun') > 0 && (new Date().getTime() - PropertiesService.getUserProperties().getProperty('LastRun')) < 360000) {
     Logger.log("Another iteration is currently running! Exiting...");
@@ -153,6 +165,9 @@ function startSync(){
   }
 
   PropertiesService.getUserProperties().setProperty('LastRun', new Date().getTime());
+
+  if (onlyFutureEvents)
+    startUpdateTime = new ICAL.Time.fromJSDate(new Date());
 
   //Disable email notification if no mail adress is provided
   emailSummary = emailSummary && email != "";
@@ -247,10 +262,4 @@ function startSync(){
   }
   Logger.log("Sync finished!");
   PropertiesService.getUserProperties().setProperty('LastRun', 0);
-
-  if (reportOverallFailure) {
-    // Cause the Google Apps Script "Executions" dashboard to show a failure
-    // (the message text does not seem to be logged anywhere)
-    throw new Error('The sync operation produced errors. See log for details.');
-  }
 }
