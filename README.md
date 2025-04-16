@@ -4,7 +4,7 @@
 
 This is a standalone script (that consists of multiple files). The purpose is to sync ics/ical calendars to Google Calendar. Google Calendar *can* already do this, but updates only happen once every 12 or even 24 hrs. This script can be run much more frequently.
 
-[If you want to use this, please copy the script from here](https://script.google.com/d/1BOk8MDLbLaHh6SwG1M1tsgNXjkcC-79LE0QoipRuTDxbO3fMVvqoROQD/edit?newcopy=true)
+[If you want to use this, please copy the script from here](https://script.google.com/d/1r6QKF-kE9HcFZ_PoVkKCxTVv6UZ-auhUdK09YJLwjKoXGsT0_wN-APmW/edit?usp=sharing)
 
 **To make a copy in the new Google Apps Script interface:**
 1. Go to the project overview icon on the left (looks like this: ⓘ)
